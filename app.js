@@ -30,7 +30,7 @@ module.exports = app;
 
 const hasPriorityAndStatusProperties = (requestQuery) => {
   return (
-    (requestQuery.priority !== undefined) & (requestQuery.status !== undefined)
+    requestQuery.priority !== undefined && requestQuery.status !== undefined
   );
 };
 
@@ -75,11 +75,10 @@ app.get("/todos/", async (request, response) => {
       getTodosQuery = `SELECT * FROM 
     todo
     WHERE 
-    todo LIKE '%${search_q}%';`;
-
-      const data = await database.all(getTodosQuery);
-      response.send(data);
+   todo LIKE '%${search_q}%';`;
   }
+  data = await database.all(getTodosQuery);
+  response.send(data);
 });
 
 app.get("/todos/:todoId/", async (request, response) => {
@@ -94,7 +93,10 @@ app.get("/todos/:todoId/", async (request, response) => {
 
 app.post("/todos/", async (request, response) => {
   const { id, todo, priority, status } = request.body;
-  const postQuery = `SELECT * FROM todo;`;
+  const postQuery = `INSERT INTO
+    todo (id, todo, priority, status)
+   VALUES
+    (${id}, '${todo}', '${priority}', '${status}');`;
   await database.run(postQuery);
   response.send("Todo Successfully Added");
 });
@@ -114,15 +116,18 @@ app.put("/todos/:todoId/", async (request, response) => {
       updateColumn = "Todo";
       break;
   }
-  const previousTodoQuery = `SELECT * FROM todo
-    WHERE 
+  const previousTodoQuery = `SELECT
+   * 
+   FROM 
+   todo
+WHERE 
     id = ${todoId};`;
   const previousTodo = await database.get(previousTodoQuery);
 
   const {
     todo = previousTodo.todo,
-    status = previousTodo.priority,
     priority = previousTodo.priority,
+    status = previousTodo.status,
   } = request.body;
 
   const updateTodoColumn = `UPDATE todo 
